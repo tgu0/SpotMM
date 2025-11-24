@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import ijson
 import time
+from statsmodels.tsa.stattools import adfuller
 
 def stream_filtered_books(json_path, chunk_size=50_000, min_size=0.01):
     """
@@ -161,7 +162,7 @@ def compute_forward_metrics(df, target_notional=10000, price_col='vwap', notiona
     return df
 
 
-def analyze_time_to_notional(df_orig, notionals=[100000, 500000, 1000000, 2000000, 5000000, 10000000]):
+def analyze_time_to_notional(df_orig, notionals=[100000, 250000, 500000,750000, 1000000, 2000000]):
     results = {}
 
     for notional in notionals:
@@ -187,12 +188,13 @@ if __name__ == "__main__":
     #df_bbo = pd.read_parquet('data_small/btc/bbo_btc.parquet')
     #records = ijson.items(open("data/btc/book_update_btc.json"), "item")
     #obdf = pd.DataFrame(records)
-    path='data/btc/'
+    coin='doge'
+    path='data/' +coin+'/'
     print("reading in trades data")
-    df_trades = pd.read_parquet(path+'trades_btc.parquet')
+    df_trades = pd.read_parquet(path+'trades_'+coin+'.parquet')
     #print("aggregating trades to millisecond granularity")
     df_trades['direction']=2*df_trades["content_b"]-1
-    df_trades['notional_traded'] = df_trades['content_p'] * df_trades['content_q']*df_trades['direction']
+    df_trades['notional_traded'] = df_trades['content_p'] * df_trades['content_q']
     df_trades['timestamp'] = pd.to_datetime(df_trades['content_t'], unit='us')
     # Round timestamp to millisecond
     df_trades['timestamp_ms'] = df_trades['timestamp'].dt.floor('1ms')
@@ -209,7 +211,7 @@ if __name__ == "__main__":
     df_agg['vwap'] = df_agg['notional_traded'] / df_agg['content_q']
     del df_trades
     print("reading in order book information")
-    ob_path = path+"book_update_btc.json"
+    ob_path = path+"book_update_"+coin+".json"
 
     all_chunks = []
     for chunk in stream_filtered_books(ob_path):
@@ -242,7 +244,13 @@ if __name__ == "__main__":
     #del df_merged
     print("performing time analysis on notional volumes")
     analysis_df=analyze_time_to_notional(df_merged)
-    analysis_df.to_csv('time_analysis.csv')
-    df_final = compute_forward_metrics(df_merged, target_notional=2000000, price_col='vwap')
+    analysis_df.to_csv(coin+'_time_analysis.csv')
+    df_final = compute_forward_metrics(df_merged, target_notional=250000, price_col='vwap')
     df_final.dropna(subset=['vwap', 'bids', 'asks'], inplace=True)
-    df_final.to_parquet("data/btc/btc_data_all.parquet", compression="snappy")
+    df_final.to_parquet("data/"+coin+"/"+coin+"_data_all.parquet", compression="snappy")
+    df_sample= df_final[:100000]
+    print("ADF of forward VWAP prices:")
+    print(adfuller(df_sample['forward_vwap'],maxlag=50, autolag=None, regression='c' ))
+    df_sample['future_returns']= (df_sample['forward_vwap']-df_sample['vwap'])/df_sample['vwap']
+    print("ADF of forward VWAP returns:")
+    print(adfuller(df_sample['future_returns'],maxlag=50, autolag=None, regression='c'))

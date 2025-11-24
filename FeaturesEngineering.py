@@ -171,9 +171,10 @@ def compute_trade_flow_features(df):
     return df
 
 if __name__ == "__main__":
-    path='data/btc/'
+    coin='doge'
+    path='data/' + coin +'/'
     print('reading in parquet file')
-    df=pd.read_parquet(path+'btc_data_all.parquet')
+    df=pd.read_parquet(path+coin+'_data_all.parquet')
     split_date = pd.Timestamp("2025-11-07")
     #print("splitting data into training and testing")
     #df = df_all[df_all.index < split_date]
@@ -224,4 +225,4 @@ if __name__ == "__main__":
     df=compute_momentum_features(df)
     df[['weighted_momentum', 'volatility_1m', 'volatility_5m']].describe()
     print("writing to parquet")
-    df.to_parquet(path+'btc_with_features.parquet', compression="snappy")
+    df.to_parquet(path+coin+'_with_features.parquet', compression="snappy")
