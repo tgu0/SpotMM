@@ -13,7 +13,7 @@ Raw Data → DataLoader.py → FeaturesEngineering.py → FeatureSelection.py �
 ## 1. DataLoader.py
 
 ### Purpose
-Loads and preprocesses raw cryptocurrency market data from Binance, merging order book snapshots with executed trades.
+Loads and preprocesses raw cryptocurrency market data from a centralized exchange, merging order book snapshots with executed trades.
 
 ### Input Data
 - **Order Book Data**: JSON file containing order book snapshots
