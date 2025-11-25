@@ -6,8 +6,12 @@ from sklearn.linear_model import Ridge, LinearRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_squared_error
+from statsmodels.stats.diagnostic import het_breuschpagan
+import statsmodels.api as sm
 import quantstats as qs
 from math import sqrt
+import matplotlib.pyplot as plt
+from statsmodels.graphics.tsaplots import plot_acf
 qs.extend_pandas()
 
 def enforce_single_position(
@@ -20,7 +24,8 @@ def enforce_single_position(
     future_vwap_col="forward_vwap",
     out_signal_col="signal_single_pos",
     ret_col="strategy_ret_gross",
-    use_mid=False
+    use_mid=False,
+    max_cross=0.01
 ):
     """
     Enforce that only one position can be open at a time AND compute per-trade returns.
@@ -77,16 +82,23 @@ def enforce_single_position(
         if s < 0:  # SELL / short
             if np.isnan(bid[i]):
                 continue
-            entry_price = bid[i]
             if use_mid:
                 entry_price=vwap[i]
+            else:
+                if abs(bid[i] - vwap[i]) / vwap[i] > max_cross:
+                    continue
+                entry_price = bid[i]
+
             trade_ret = (entry_price - fvw[i]) / vwap[i]
         elif s > 0:  # BUY / long
             if np.isnan(ask[i]):
                 continue
-            entry_price = ask[i]
             if use_mid:
                 entry_price=vwap[i]
+            else:
+                if abs(ask[i] - vwap[i]) / vwap[i] > max_cross:
+                    continue
+                entry_price = ask[i]
             trade_ret = (fvw[i] - entry_price) / vwap[i]
         else:
             continue  # shouldn't happen, but just in case
@@ -106,7 +118,7 @@ def enforce_single_position(
 
 
 if __name__ == "__main__":
-    coin='btc'
+    coin='doge'
     path='data/' + coin+'/'
     print('reading in parquet file')
     df_all=pd.read_parquet(path+coin+'_with_features.parquet')
@@ -169,7 +181,7 @@ if __name__ == "__main__":
         df_test["y_pred"] > buy_thresh, 1,
         np.where(df_test["y_pred"] < sell_thresh, -1, 0)
     )
-    df_test=enforce_single_position(df_test, use_mid=True)
+    df_test=enforce_single_position(df_test, use_mid=False, max_cross=0.01)
     #df_test["strategy_ret_gross"] = df_test["signal_single_pos"] * df_test["future_returns"]
     #generate_report(df_test["strategy_ret_gross"], 'btc-mm')
     roi_series = df_test.loc[df_test["strategy_ret_gross"]!=0, "strategy_ret_gross"].copy()
@@ -182,6 +194,23 @@ if __name__ == "__main__":
 
     # now give returns to quantstats
     qs.reports.html(roi_series, output=coin+"_marketmaking.html")
+
+    #residual analysis
+    residuals = y_test - y_pred_test
+    residuals_1s = residuals.resample("1S").mean()
+    residuals_1s.dropna(inplace=True)
+    plot_acf(residuals_1s, lags=50)
+    #plt.show()
+
+    X_bp = sm.add_constant(X_test.values)  # or X_test.to_numpy()
+
+    # 3. Run the test
+    bp_test = het_breuschpagan(residuals, X_bp)
+
+    lm_stat, lm_pvalue, f_stat, f_pvalue = bp_test
+
+    print("Breusch–Pagan LM stat:", lm_stat)
+    print("Breusch–Pagan LM p-value:", lm_pvalue)
     '''
     model = LinearRegression()
     model.fit(X_train[["vwap"]], Y_train)
