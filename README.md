@@ -95,7 +95,7 @@ Engineers a comprehensive set of features from raw market data, capturing order 
 ## 3. FeatureSelection.py
 
 ### Purpose
-Trains a Ridge regression model to predict short-term returns, selects the most important features, generates trading signals, and backtests a realistic execution strategy.
+Trains a Ridge regression model to predict short-term returns, selects the most important features, generates trading signals, and backtests a simplistic bare bones execution strategy.
 
 ### Input Data
 - **File**: `data/{coin}/{coin}_with_features.parquet` (output from FeaturesEngineering.py)
