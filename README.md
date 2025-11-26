@@ -1,6 +1,6 @@
 # SpotMM: Cryptocurrency Market Making Strategy
 
-This repository implements a machine learning-based trading strategy for cryptocurrency markets using high-frequency order book and trade data. The pipeline consists of four main stages: data loading, feature engineering, feature selection + model diagnostics, and strategy backtesting.
+This repository implements a regression-based trading strategy for cryptocurrency markets using high-frequency order book and trade data. The pipeline consists of four main stages: data loading, feature engineering, feature selection + model diagnostics, and strategy backtesting.
 
 ## Pipeline Overview
 
