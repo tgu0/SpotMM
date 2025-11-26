@@ -5,7 +5,7 @@ This repository implements a machine learning-based trading strategy for cryptoc
 ## Pipeline Overview
 
 ```
-Raw Data → DataLoader.py → FeaturesEngineering.py → FeatureSelection.py → Performance Report
+Raw Data → DataLoader.py → FeaturesEngineering.py → FeatureSelection.py → Model Diagnostics  → Toy Trading Model → ROI Analysis
 ```
 
 ---
@@ -17,7 +17,7 @@ Loads and preprocesses raw cryptocurrency market data from a centralized exchang
 
 ### Input Data
 - **Order Book Data**: JSON file containing order book snapshots
-  - Format: Binance depth stream format with bids/asks arrays
+  - Format:  bids/asks arrays
   - Location: `data/{coin}/book_update_{coin}.json`
 
 - **Trade Data**: Parquet file containing executed trades
